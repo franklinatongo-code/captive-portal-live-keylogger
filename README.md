@@ -257,3 +257,13 @@ MIT — see [LICENSE](LICENSE). Free for personal and educational use.
 Star the repo, fork it, and open issues/PRs. Built for a classroom demo — feedback welcome.
 
 **Repo:** https://github.com/franklinatongo-code/captive-portal-live-keylogger
+
+---
+
+## 🔍 Find this project
+
+**Search keywords:** captive portal, fake wifi, hostapd, dnsmasq, iptables, kali linux, wifi honeypot, captive portal keylogger, live keystroke logger, bettercap, jsinject, portal themes, classroom demo, security education, pentesting, wifi security, network security, man in the middle, MITM, phishing awareness, social engineering demo.
+
+**Topics:** `captive-portal` `hostapd` `dnsmasq` `iptables` `keylogger` `wifi` `kali-linux` `python` `bettercap` `pentesting` `security` `education`
+
+**Related:** [kali-mcp](https://github.com/franklinatongo-code/kali-mcp) — Kali Linux as an MCP server (Playwright Firefox automation + remote control).
