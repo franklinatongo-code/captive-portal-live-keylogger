@@ -248,7 +248,7 @@ SUMMARY.md          # build notes + known limits
 
 ## 📜 License
 
-MIT — see `LICENSE` if present; otherwise treat as all rights reserved.
+MIT — see [LICENSE](LICENSE). Free for personal and educational use.
 
 ---
 
