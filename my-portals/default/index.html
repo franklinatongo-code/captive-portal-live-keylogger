@@ -1,0 +1,14 @@
+<!doctype html><meta name=viewport content="width=device-width,initial-scale=1">
+<title>{{SSID}} WiFi</title>
+<style>body{font-family:sans-serif;background:#0f172a;color:#e2e8f0;display:flex;justify-content:center;padding:24px;margin:0}
+.card{background:#1e293b;padding:24px;border-radius:12px;max-width:380px;width:100%}.btn{background:#22c55e;border:0;color:#052e16;
+font-weight:700;padding:12px;width:100%;border-radius:8px;font-size:16px}input{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:0}
+small{color:#94a3b8}</style>
+<div class=card><h2>{{SSID}} WiFi</h2>
+<form method=POST action=/auth>
+<label><input type=checkbox name=accept value=1 required> I accept the terms</label>
+<input name=code placeholder="Voucher code (if required)">
+<input name=username placeholder="Username (login mode)">
+<input name=password type=password placeholder="Password">
+<button class=btn>Connect</button></form>
+<p><small>{{CLIENT_IP}} · {{CLIENT_MAC}}<br>Works offline. No external CSS/JS needed.</small></p></div>

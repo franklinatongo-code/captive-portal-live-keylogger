@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta name=viewport content="width=device-width,initial-scale=1">
+<title>{{SSID}} — Free Cafe WiFi</title>
+<style>
+body{font-family:Georgia,serif;background:#241610;color:#f5e9d4;margin:0;display:flex;justify-content:center;padding:20px 12px}
+.card{background:#3a2817;border:1px solid #6b5232;border-radius:18px;padding:28px 24px;max-width:380px;width:100%;text-align:center}
+.cup{font-size:46px}.hours{font-size:13px;color:#c9ae7e}
+.codebox{background:#241610;border:2px dashed #c98f2e;border-radius:10px;padding:14px;margin:14px 0}
+input{width:100%;padding:12px;margin:7px 0;border:0;border-radius:8px;font-size:16px;box-sizing:border-box;text-align:center}
+.btn{background:#c98f2e;border:0;padding:13px;width:100%;border-radius:10px;font-size:16px;font-weight:700;color:#241610}
+details{margin-top:12px;font-size:14px}summary{cursor:pointer;color:#c9ae7e}
+hr{border:0;border-top:1px solid #6b5232;margin:16px 0}small{color:#c9ae7e}</style></head>
+<body><div class=card>{{DEMO_BANNER}}
+<div class=cup>&#9749;</div><h2 style="margin:6px 0">{{SSID}}</h2>
+<p class=hours>Free WiFi for customers · ask staff for today's code</p>
+<div class=codebox><form method=POST action=/auth>
+<input name=code placeholder="Receipt code (e.g. LATTE-42)" required>
+<button class=btn>Get connected</button></form></div>
+<details><summary>Member login instead</summary>
+<form method=POST action=/auth>
+<input name=username type=email placeholder="Member email">
+<input name=password type=password placeholder="Member password">
+<button class=btn>Sign in</button></form></details>
+<p><small>No time limit · {{CLIENT_IP}}</small></p></div></body></html>

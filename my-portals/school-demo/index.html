@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Campus Connect — Student WiFi</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="bg" aria-hidden="true"><span class="orb o1"></span><span class="orb o2"></span><span class="grid"></span></div>
+
+<header class="brand">
+  <span class="crest" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9 12 4 2 9l10 5 10-5z"/><path d="M6 11.5V16c0 1.5 2.7 3 6 3s6-1.5 6-3v-4.5"/><path d="M22 9v5"/></svg>
+  </span>
+  <div><strong>Campus Connect</strong><small>Official student network</small></div>
+  <span class="pill">STUDENT</span>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Fast campus WiFi,<br>made for student life.</h1>
+    <p>Lectures, library, hostel &amp; cafeteria — one sign-in keeps you online everywhere on campus.</p>
+    <div class="stats">
+      <div><b>500<span>Mbps</span></b><i>backbone</i></div>
+      <div><b>24<span>/7</span></b><i>uptime</i></div>
+      <div><b>12k<span>+</span></b><i>devices daily</i></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Student sign in</h2>
+    <p class="sub">Use your student credentials to get online.</p>
+    <form method="POST" action="/auth">
+      <label>Full name
+        <input name="fullname" placeholder="e.g. Ama Mensah" required autocomplete="name">
+      </label>
+      <label>Student ID
+        <input name="student_id" placeholder="e.g. S123456" required autocomplete="username">
+      </label>
+      <label>Password
+        <input name="password" type="password" placeholder="••••••••" required autocomplete="current-password">
+      </label>
+      <label class="terms"><input type="checkbox" required><span>I accept the <u>acceptable-use policy</u></span></label>
+      <button type="submit">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/></svg>
+        Connect to WiFi
+      </button>
+    </form>
+    <ol class="steps">
+      <li><b>1</b> Sign in</li>
+      <li><b>2</b> Get connected</li>
+      <li><b>3</b> Browse &amp; study</li>
+    </ol>
+  </section>
+
+  <section class="zones">
+    <span>📚 Library</span><span>🛏️ Hostels</span><span>🔬 Labs</span><span>☕ Cafeteria</span><span>🏟️ Sports</span>
+  </section>
+</main>
+
+<footer>Guest? Ask the ICT help desk, Room 101 · Mon–Fri 8am–5pm</footer>
+</body>
+</html>

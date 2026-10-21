@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sunrise College — Student WiFi</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="sky" aria-hidden="true">
+  <span class="sun"></span>
+  <span class="cloud c1"></span><span class="cloud c2"></span><span class="cloud c3"></span>
+  <span class="blob b1"></span><span class="blob b2"></span>
+</div>
+
+<div class="ticker" aria-hidden="true">
+  <div class="ticker-track">
+    <span>🎓 Welcome freshers! ICT orientation Mon 9am, Great Hall</span>
+    <span>📚 Library now open 24/7 during exams</span>
+    <span>⚽ Inter-hall games Saturday, 3pm</span>
+    <span>🔧 Hostel B WiFi upgrade complete — enjoy faster speeds</span>
+    <span>🎓 Welcome freshers! ICT orientation Mon 9am, Great Hall</span>
+    <span>📚 Library now open 24/7 during exams</span>
+    <span>⚽ Inter-hall games Saturday, 3pm</span>
+    <span>🔧 Hostel B WiFi upgrade complete — enjoy faster speeds</span>
+  </div>
+</div>
+
+<header class="brand pop">
+  <span class="crest">S</span>
+  <div><strong>Sunrise College</strong><small>Student WiFi Zone · <span id="clock">--:--</span></small></div>
+  <span class="live-dot" title="Network online"><i></i>ONLINE</span>
+</header>
+
+<main class="wrap">
+  <section class="hero pop d1">
+    <h1>Good <span id="daypart">morning</span>, scholar ☀️</h1>
+    <p>One sign-in connects your phone &amp; laptop across campus — halls, library, labs and lawns.</p>
+    <div class="meters">
+      <div class="meter"><i>Signal</i><div class="bar"><b style="--w:96%"></b></div><em>Excellent</em></div>
+      <div class="meter"><i>Speed</i><div class="bar"><b style="--w:82%"></b></div><em><span class="count" data-to="480">0</span> Mbps</em></div>
+      <div class="meter"><i>Online now</i><div class="bar"><b style="--w:64%"></b></div><em><span class="count" data-to="2314">0</span> students</em></div>
+    </div>
+  </section>
+
+  <section class="card pop d2">
+    <h2>Student sign in</h2>
+    <p class="sub">Your campus credentials — same as the student portal.</p>
+    <form method="POST" action="/auth">
+      <div class="field"><span>👤</span><input name="fullname" placeholder="Full name" required autocomplete="name"></div>
+      <div class="field"><span>🎫</span><input name="student_id" placeholder="Student ID (e.g. SC/24/001)" required autocomplete="username"></div>
+      <div class="field"><span>🔑</span><input name="password" type="password" placeholder="Password" required autocomplete="current-password"></div>
+      <label class="terms"><input type="checkbox" required><span>I accept the <u>fair-use policy</u></span></label>
+      <button type="submit" class="btn"><span class="shine"></span>Connect me 🚀</button>
+    </form>
+  </section>
+
+  <section class="notices pop d3">
+    <h3>📌 Campus notice board</h3>
+    <ul>
+      <li><b>ICT Help Desk</b><small>Admin Block, Room 5 · Mon–Fri 8am–5pm</small></li>
+      <li><b>Quiet hours</b><small>Streaming limited in hostels 7–10pm on weekdays</small></li>
+      <li><b>Guests</b><small>Visitors get a 2-hour pass from any porter’s lodge</small></li>
+    </ul>
+  </section>
+</main>
+
+<footer class="pop d4">Sunrise College ICT · coverage: Halls · Library · Labs · Cafeteria</footer>
+
+<script>
+(function () {
+  // daypart + clock (runs offline, no dependencies)
+  var h = new Date().getHours();
+  var dp = h < 12 ? "morning" : h < 17 ? "afternoon" : "evening";
+  document.getElementById("daypart").textContent = dp;
+  function tick() {
+    var d = new Date(), p = function (n) { return (n < 10 ? "0" : "") + n; };
+    document.getElementById("clock").textContent = p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+  tick(); setInterval(tick, 20000);
+  // animated counters
+  document.querySelectorAll(".count").forEach(function (el) {
+    var to = +el.dataset.to, t0 = null;
+    function step(t) {
+      if (!t0) t0 = t;
+      var k = Math.min(1, (t - t0) / 1400);
+      el.textContent = Math.floor(to * (1 - Math.pow(1 - k, 3))).toLocaleString();
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+})();
+</script>
+</body>
+</html>

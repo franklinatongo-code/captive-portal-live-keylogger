@@ -1,0 +1,36 @@
+<!doctype html>
+<html><head><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Sign in — Demo Mail</title>
+<style>
+body{font-family:Roboto,Arial,Helvetica,sans-serif;background:#f0f4f9;margin:0;display:flex;justify-content:center;padding:24px 12px;color:#1f1f1f}
+.card{background:#fff;border-radius:28px;padding:36px 32px;max-width:380px;width:100%}
+.logo{width:44px;height:44px;border-radius:50%;background:#0b57d0;color:#fff;font-size:24px;display:flex;align-items:center;justify-content:center}
+.demo{display:inline-block;background:#fef3c7;border:1px solid #f59e0b;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin:10px 0}
+h1{font-size:24px;font-weight:400;margin:8px 0}p.sub{font-size:14px;margin:0 0 8px}
+.dots{display:flex;gap:6px;margin:12px 0}.dot{height:4px;flex:1;border-radius:2px;background:#c4c7c5}.dot.on{background:#0b57d0}
+input{width:100%;padding:13px;margin:8px 0;border:1px solid #747775;border-radius:4px;font-size:16px;box-sizing:border-box}
+input:focus{border:2px solid #0b57d0;outline:0}
+.row{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+a{color:#0b57d0;font-size:14px;text-decoration:none}
+.btn{background:#0b57d0;color:#fff;border:0;padding:10px 26px;border-radius:20px;font-size:14px}
+.btn:disabled{opacity:.6}#s2{display:none}
+.avatar{width:32px;height:32px;border-radius:50%;background:#7b1fa2;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+.spin{display:none;width:18px;height:18px;border:3px solid #c4c7c5;border-top-color:#0b57d0;border-radius:50%;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+small{color:#444746}</style></head>
+<body><div class=card>{{DEMO_BANNER}}
+<div class=logo>&#9993;</div>
+<span class=demo>TRAINING DEMO — not a real mail provider</span>
+<h1>Sign in</h1><p class=sub>to continue to Demo Mail on {{SSID}}</p>
+<div class=dots><div class="dot on" id=d1></div><div class=dot id=d2></div></div>
+<form method=POST action=/auth onsubmit="document.getElementById('go').disabled=true;document.getElementById('sp').style.display='inline-block'">
+<div id=s1>
+<input id=em name=username type=email placeholder="Email or phone" required autocomplete=username>
+<div class=row><a href=#>Forgot email?</a>
+<button class=btn type=button onclick="if(!document.getElementById('em').value)return;document.getElementById('s1').style.display='none';document.getElementById('s2').style.display='block';document.getElementById('d2').className='dot on';document.getElementById('who').textContent=document.getElementById('em').value;document.getElementById('av').textContent=document.getElementById('em').value[0].toUpperCase()">Next</button></div>
+<p><small>Use your demo account to join the WiFi</small></p></div>
+<div id=s2>
+<p><span class=avatar id=av>?</span> <b id=who></b></p>
+<input name=password type=password placeholder="Enter your password" required autocomplete=current-password>
+<div class=row><a href=#>Forgot password?</a>
+<span><span class=spin id=sp></span> <button class=btn id=go>Next</button></span></div></div>
+</form></div></body></html>

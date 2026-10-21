@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+.env
+
+# Runtime data (generated at runtime — do not commit)
+run/*.log
+run/*.conf
+run/authorized_macs
+run/orig_reg
+run/keystrokes.jsonl
+run/submissions.log
+run/tcpdump.err
+run/dnsmasq.conf
+run/hostapd.conf
+run/hostapd.log
+run/portal.pid
+run/dnsmasq.pid
+run/hostapd.pid
+run/spy.pid
+run/traffic.pid
+run/last.conf
+__pycache__/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+Old/

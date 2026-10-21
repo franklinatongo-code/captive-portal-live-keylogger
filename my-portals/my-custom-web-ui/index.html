@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta name=viewport content="width=device-width,initial-scale=1">
+<title>{{SSID}} WiFi</title>
+<style>body{font-family:sans-serif;background:#111827;color:#f9fafb;display:flex;justify-content:center;padding:24px;margin:0}
+.card{background:#1f2937;padding:28px;border-radius:12px;max-width:380px;width:100%}
+input{width:100%;padding:11px;margin:7px 0;border:0;border-radius:8px;box-sizing:border-box}
+.btn{background:#3b82f6;color:#fff;border:0;padding:12px;width:100%;border-radius:8px;font-size:16px;font-weight:700}</style></head>
+<body><div class=card>{{DEMO_BANNER}}<h2>{{SSID}} WiFi</h2>
+<!-- YOUR UI HERE. Available: {{SSID}} {{CLIENT_IP}} {{CLIENT_MAC}} {{GATEWAY}}.
+     Keep any field names you like — each is logged per-field in lab capture mode.
+     Form must POST to /auth. manifest.json is optional (defaults: open auth, capture on). -->
+<form method=POST action=/auth>
+<input name=username placeholder="Username">
+<input name=password type=password placeholder="Password">
+<button class=btn>Connect</button></form>
+<p><small>{{CLIENT_IP}} · {{CLIENT_MAC}}</small></p></div></body></html>

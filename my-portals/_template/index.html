@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Free WiFi — Connect</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="card">
+  <h1>Free WiFi</h1>
+  <p class="sub">Click below to get online.</p>
+  <!-- IMPORTANT: keep method=POST action=/auth, the server authorizes on this -->
+  <form method="POST" action="/auth">
+    <label class="terms"><input type="checkbox" required> I accept the terms of use</label>
+    <button type="submit">Connect</button>
+  </form>
+  <p class="hint">Copy this folder to make your own portal.</p>
+</main>
+</body>
+</html>
